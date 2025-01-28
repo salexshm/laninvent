@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список устройств</title>
+</head>
+<body>
+    <h1>Список устройств</h1>
+    {% if devices %}
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя устройства</th>
+                <th>Тип устройства</th>
+                <th>IP адрес</th>
+                <th>Родитель</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td>{{ device.id }}</td>
+                <td><a href="{{ url_for('device_detail', id=device.id) }}" class="btn btn-sm btn-primary">{{ device.device_name }}</a></td>
+                <td>{{ device.device_type.type_name }}</td>
+                <td>{{ device.device_ip }}</td>
+                <td>{{ device.parent.device_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Устройства не найдены.</p>
+    {% endif %}
+    <br>
+    <a href="{{ url_for('device_add') }}">Создать новое устройство</a>
+</body>
+</html>

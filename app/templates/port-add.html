@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Port</title>
+</head>
+<body>
+    <h1>Add Port</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.port_number.label }}<br>
+            {{ form.port_number(size=20) }}
+        </p>
+        <p>
+            {{ form.port_description.label }}<br>
+            {{ form.port_description(size=40) }}
+        </p>
+        <p>
+            {{ form.port_type.label }}<br>
+            {{ form.port_type() }}
+        </p>
+        <p>
+        {{ form.vlan.label(class="form-label") }}
+        {{ form.vlan(class="form-control", multiple=True) }}
+         </p>
+        <p>
+            {{ form.submit() }}
+        </p>
+    </form>
+</body>
+</html>

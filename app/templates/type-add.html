@@ -1,0 +1,9 @@
+<div class="container mt-4">
+    <h1 class="mb-4">Добавить тип устройства</h1>
+</div>
+<form method="post">
+    {{ form.hidden_tag() }}
+    {{ form.type_name.label }} {{ form.type_name }}
+
+    {{ form.submit(class="btn btn-primary") }}
+</form>

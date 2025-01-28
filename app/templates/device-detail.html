@@ -1,0 +1,64 @@
+<h1 class="mb-4">Устройство</h1>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th scope="col">Имя</th>
+                <th scope="col">Тип</th>
+                <th scope="col">Штрихкод</th> 
+                <th scope="col">Родитель</th>
+                <th scope="col">Действия</th>                
+            </tr>
+        </thead>
+        <tbody>
+         
+            <tr>
+                <td>{{ device.device_name }}</td>
+                <td>{{ device.device_type.type_name }}</td>
+                <td><a href="{{ file_url }}" class="btn btn-sm btn-primary">{{ device.device_barcode }}</a></td>
+                <td>{% if device.parent %}
+                    {{ device.parent.device_name }}
+                {% else %}
+                    Нет родителя
+                {% endif %}</td>
+                <td>
+                    <a href="{{ url_for('device_delete', id=device.id) }}" class="btn btn-sm btn-danger">Удалить</a>
+                </td>
+            </tr>
+    
+        </tbody>        
+    </table>
+    {% if device.ports %}
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>Номер порта</th>
+                <th>Описание порта</th>
+                <th>Тип порта</th>
+                <th>Vlans</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for port in device.ports %}
+            <tr>
+                <td>{{ port.port_number }}</td>
+                <td>{{ port.port_description }}</td>
+                <td>{{ port.port_type }}</td>
+                <td>
+                    {% if port.vlans %}
+                        
+                        {% for vlan in port.vlans %}
+                        {{ vlan.vlan_id }} - {{ vlan.vlan_description }}<br>
+                        {% endfor %}
+                        
+                    {% else %}
+                        Нет VLAN
+                    {% endif %}
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Устройства не найдены.</p>
+    {% endif %}
