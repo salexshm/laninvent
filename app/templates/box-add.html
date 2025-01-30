@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить коробку</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; width: 40%; }
+    </style>
+    <meta charset="UTF-8">
+    <title>Добавить муфту</title>
+</head>
+<body>
+    <h1> Добавить муфту</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.box_description.label }}<br>
+            {{ form.box_description }}
+        </p>
+        <p>
+            <p>{{ form.box_coordinates.label }} <br>
+                {{ form.box_coordinates(id="coords") }}
+            </p>
+            <div id="map"></div>
+        </p>
+        <p>
+            {{ form.submit() }}
+        </p>
+    </form>    
+    <p>
+        <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    </p>
+</body>
+</html>

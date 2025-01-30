@@ -1,78 +1,113 @@
-from app import db
-from app import app
+from app import db, app
+from flask_sqlalchemy import SQLAlchemy
 
 
-ports_vlans = db.Table(
-    'ports_vlans',
-    db.Column('port_id', db.Integer, db.ForeignKey('ports.id'), primary_key=True),
-    db.Column('vlan_id', db.Integer, db.ForeignKey('vlans.id'), primary_key=True)
-)
+class Barcode(db.Model):
+    """
+    Модель для хранения штрихкодов.
+    Связана c Optobox и Device через One-to-One.
+    """
+    __tablename__ = 'barcode'
+    id = db.Column(db.Integer, primary_key=True)
+    num = db.Column(db.String(12), nullable=False, unique=True)   
+    
+    # Связь One-to-One с муфтой
+    box = db.relationship('Optobox', back_populates='barcode')    
+   
+    # Связь One-to-One с устройством
+    device = db.relationship('Device', back_populates='barcode')
+
+    def __repr__(self):
+        return f"<Barcode(id={self.id}, num={self.num})>"
+
+
+class OpticalCable(db.Model):
+    """
+    Модель для хранения оптических кабелей.
+    Связана c Optobox через One-to-Many.
+    """
+    __tablename__ = 'opticalCable'
+    id = db.Column(db.Integer, primary_key=True)
+    from_box = db.Column(db.String(5), nullable=False)
+    fiber_color = db.Column(db.String(20), nullable=False)
+    
+    # Внешний ключ для связи с таблицей Optobox
+    box_id = db.Column(db.Integer, db.ForeignKey('optobox.id'))    
+    # Связь с Optobox
+    box = db.relationship('Optobox', back_populates='cables')
+
+    def __repr__(self):
+        return f"<OpticalCable(id={self.id}, from_box={self.from_box}, fiber_color={self.fiber_color})>"
+
+
+class Optobox(db.Model):
+    """
+    Модель для хранения муфт.
+    Связана c OpticalCablets и Barcode.
+    """
+    __tablename__ = 'optobox'
+    id = db.Column(db.Integer, primary_key=True)
+    box_description = db.Column(db.String(50), nullable=False, unique=True)
+    box_coordinates = db.Column(db.String(50), nullable=True)
+    
+    # Связь с таблицей OpticalCablets
+    cables = db.relationship('OpticalCable', back_populates='box', cascade='all, delete-orphan', lazy='dynamic')
+    
+    # Связь One-to-One со штрихкодом
+    barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
+    barcode = db.relationship('Barcode', back_populates='box')
+    
+
+    def __repr__(self):
+        return f"<Optobox(id={self.id}, box_description={self.box_description})>"
 
 
 class DeviceType(db.Model):
+    """
+    Модель для хранения типов устройств.
+    Связана c Device One-to-Many.
+    """
     __tablename__ = 'device_type'
     id = db.Column(db.Integer, primary_key=True)
     type_name = db.Column(db.String(50), nullable=False, unique=True)
-    devices = db.relationship('Device', back_populates='device_type', lazy=True)
-    
-
-class Vlans(db.Model):
-    __tablename__ = 'vlans'
-    id = db.Column(db.Integer, primary_key=True)
-    vlan_id = db.Column(db.String(50), nullable=False, unique=True)
-    vlan_description = db.Column(db.String(100))
-
-    ports = db.relationship('Ports', secondary=ports_vlans, back_populates='vlans')
+    devices = db.relationship('Device', back_populates='device_type')
 
     def __repr__(self):
-        return f"<Vlans(id={self.id}, vlan_id={self.vlan_id}, vlan_description={self.vlan_description})>"
-
-
-class Ports(db.Model):
-    __tablename__ = 'ports'
-    id = db.Column(db.Integer, primary_key=True)
-    port_number = db.Column(db.String(10), nullable=False)
-    port_description = db.Column(db.String(100))
-    port_type = db.Column(db.Enum('tag', 'untag', name='port_types'), nullable=False)
-    
-     # Внешний ключ для связи с таблицей Devices
-    device_id = db.Column(db.Integer, db.ForeignKey('devices.id'))
-    
-    # Связь с устройством
-    device = db.relationship('Device', back_populates='ports')
-    
-    vlans = db.relationship('Vlans', secondary=ports_vlans, back_populates='ports')
-
-    def __repr__(self):
-        return f"<Ports(id={self.id}, port_number={self.port_number}, port_type={self.port_type}, device_id={self.device_id})>"
+        return f"<DeviceType(id={self.id}, type_name={self.type_name})>"
 
 
 class Device(db.Model):
-    __tablename__ = 'devices'
+    """
+    Модель для хранения  устройств.
+    Связана c Many-to-One → DeviceType (через device_type_id)
+    One-to-One → Barcode.
+    """
+    __tablename__ = 'device'
     id = db.Column(db.Integer, primary_key=True)
     device_name = db.Column(db.String(100), nullable=False)
     device_model = db.Column(db.String(64))
-    device_barcode = db.Column(db.String(12))
-    device_locations = db.Column(db.String(128))
-    device_coordinates =db.Column(db.String(50))
+    device_location = db.Column(db.String(128))
+    device_coordinates = db.Column(db.String(50))
     device_ip = db.Column(db.String(15))
     device_mask = db.Column(db.String(15))
     device_nodal = db.Column(db.Boolean, default=False, nullable=False)
-    
-    # Связь с родительским устройством
-    device_type_id = db.Column(db.Integer, db.ForeignKey('device_type.id'), nullable=False)
-    parent_id = db.Column(db.Integer, db.ForeignKey('devices.id'), nullable=True)  
 
-    # Отношения. Связь с дочерними устройствами
+    # Связь с типом устройства
+    device_type_id = db.Column(db.Integer, db.ForeignKey('device_type.id'), nullable=False)
     device_type = db.relationship('DeviceType', back_populates='devices')
-    parent = db.relationship('Device', remote_side=[id], backref='children')   
     
-     # Связь с таблицей Ports
-    ports = db.relationship('Ports', back_populates='device', cascade='all, delete-orphan', lazy='dynamic')
+    # Связь One-to-One со штрихкодом
+    barcode_id = db.Column(db.Integer, db.ForeignKey('barcode.id'))
+    barcode = db.relationship('Barcode', back_populates='device')
+
+    # Связь с родительским устройством
+    parent_id = db.Column(db.Integer, db.ForeignKey('device.id'), nullable=True)
+    parent = db.relationship('Device', remote_side=[id], backref='children')
 
     def __repr__(self):
         return f"<Device(id={self.id}, device_name={self.device_name}, parent_id={self.parent_id})>"
 
 
+# Создаём таблицы в базе данных
 with app.app_context():
     db.create_all()

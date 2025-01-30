@@ -1,19 +1,33 @@
-<div class="container mt-4">
-    <h1 class="mb-4">Добавить устройство</h1>
-</div>
-<form method="post">
-    {{ form.hidden_tag() }}<br>
-    {{ form.dev_name.label }} {{ form.dev_name }}<br>
-    {{ form.dev_type.label }} {{ form.dev_type }}<br>
-    {{ form.dev_barcode.label }} {{ form.dev_barcode }}<br>
-    {{ form.device_nodal.label }} {{ form.device_nodal }}<br>
-    {{ form.parent.label }} {{ form.parent }}<br>
-    {{ form.dev_model.label }} {{ form.dev_model }}<br>
-    {{ form.dev_locations.label }} {{ form.dev_locations }}<br>
-    {{ form.dev_coordinates.label }} {{ form.dev_coordinates }}<br>
-    {{ form.dev_ip.label }} {{ form.dev_ip }}<br>
-    {{ form.dev_mask.label }} {{ form.dev_mask }}<br>
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title>Добавить коробку</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <style>
+            #map { height: 400px; width: 40%; }
+        </style>
+    </head>
+<body>
+    <h2>Добавить новое устройство</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}<br>
+        {{ form.dev_name.label }} {{ form.dev_name }}<br>
+        {{ form.dev_type.label }} {{ form.dev_type }}<br>
+        {{ form.device_nodal.label }} {{ form.device_nodal }}<br>
+        {{ form.parent.label }} {{ form.parent }}<br>
+        {{ form.dev_model.label }} {{ form.dev_model }}<br>
+        {{ form.dev_location.label }} {{ form.dev_location }}<br>
+        {{ form.dev_ip.label }} {{ form.dev_ip }}<br>
+        {{ form.dev_mask.label }} {{ form.dev_mask }}<br>
+        <p>{{ form.dev_coordinates.label }} {{ form.dev_coordinates(id="coords") }}</p>
+        <div id="map"></div>
+    
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
 
-
-    {{ form.submit(class="btn btn-primary") }}
-</form>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    
+</body>
+</html>

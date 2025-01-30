@@ -1,8 +1,8 @@
 from app import app
 from flask import render_template, redirect, url_for, flash, request
 from app import db
-from app.models import DeviceType, Device, Ports, Vlans
-from app.forms import Dev_typeForm, DeviceForm, PortForm, VlanForm
+from app.models import DeviceType, Device, Barcode, Optobox, OpticalCable
+from app.forms import Dev_typeForm, DeviceForm, BoxForm, CableForm
 from app.core import generate_barcode
 
 
@@ -49,7 +49,7 @@ def devices():
 @app.route('/devices/detail/<int:id>', methods=['GET', 'POST'])
 def device_detail(id):
     device = Device.query.get_or_404(id)
-    filename = f'{device.device_barcode}.png'
+    filename = f'{device.barcode.num}.png'
     file_url = url_for("static", filename=f"barcode/{filename}") 
     return render_template('device-detail.html',  device=device, file_url=file_url)
 
@@ -65,75 +65,115 @@ def device_delete(id):
 
 @app.route('/devices/add', methods=['GET', 'POST'])
 def device_add():
-    form = DeviceForm()
-    barcode = form.dev_barcode.data
+    form = DeviceForm()  # Форма для ввода данных об устройстве
+    
     if form.validate_on_submit():
-        device = Device(
+        # Генерируем новый штрихкод
+        barcode_num = generate_barcode()
+        
+        # Создаём объект штрихкода
+        new_barcode = Barcode(num=barcode_num)
+        db.session.add(new_barcode)
+        db.session.flush()  # Фиксируем, чтобы получить new_barcode.id
+        
+        # Создаём объект устройства
+        new_device = Device(
             device_name=form.dev_name.data,
             device_model=form.dev_model.data,
-            device_barcode=generate_barcode(barcode),
-            device_locations=form.dev_locations.data,
+            device_location=form.dev_location.data,
             device_coordinates=form.dev_coordinates.data,
             device_ip=form.dev_ip.data,
             device_mask=form.dev_mask.data,
-            device_type_id=form.dev_type.data,
             device_nodal=form.device_nodal.data,
-            parent_id=form.parent.data if form.parent.data != 0 else None,            
-            )
-        db.session.add(device)
+            device_type_id=form.dev_type.data,
+            parent_id=int(form.parent.data) if form.parent.data else None,  # Родительское устройство
+            barcode_id=new_barcode.id  # Привязываем штрихкод
+        )
+        
+        db.session.add(new_device)
         db.session.commit()
-        flash('Тип устройства успешно добавлен', 'success')
-        return redirect(url_for('devices'))
+
+        flash(f'Устройство "{new_device.device_name}" добавлено! Штрихкод: {barcode_num}', 'success')
+        return redirect(url_for('devices'))  # Перенаправляем на список устройств
     
     return render_template('device-add.html', form=form)
 
 
-@app.route('/devices/port/add/<int:id>', methods=['GET', 'POST'])
-def port_add(id):
-    form = PortForm()
-    device = Device.query.get_or_404(id)
+@app.route('/boxes', methods=['GET'])
+def boxes():
+    boxes = Optobox.query.all()
+    return render_template('boxes.html', boxes=boxes)
+
+
+@app.route('/boxes/add', methods=['GET', 'POST'])
+def box_add():
+    form = BoxForm()
     
     if form.validate_on_submit():
-        selected_vlans = form.vlan.data
-        port = Ports(
-            port_number=form.port_number.data,
-            port_description=form.port_description.data,
-            port_type=form.port_type.data,
-            device_id=device.id,     
+        # Генерируем новый штрихкод
+        barcode_num = generate_barcode()
+        
+        # Создаём объект штрихкода
+        new_barcode = Barcode(num=barcode_num)
+        db.session.add(new_barcode)
+        db.session.flush()  # Фиксируем, чтобы получить new_barcode.id
+        
+        new_box = Optobox(
+            box_description=form.box_description.data,
+            box_coordinates=form.box_coordinates.data,
+            barcode_id=new_barcode.id  
+            )        
+
+        db.session.add(new_box)
+        db.session.commit()
+
+        flash(f'Устройство добавлено!')
+        return redirect(url_for('boxes'))
+    
+    return render_template('box-add.html', form=form)
+
+
+@app.route('/boxes/detail/<int:id>', methods=['GET', 'POST'])
+def box_detail(id):
+    box = Optobox.query.get_or_404(id)
+    filename = f'{box.barcode.num}.png'
+    file_url = url_for("static", filename=f"barcode/{filename}") 
+    return render_template('box-detail.html',  box=box, file_url=file_url)
+
+
+@app.route('/boxes/delete/<int:id>')
+def box_delete(id):
+    box = Optobox.query.get_or_404(id)
+    db.session.delete(box)
+    db.session.commit()
+    flash('Муфта успешно удалена', 'success')
+    return redirect(url_for('boxes'))
+
+
+@app.route('/boxes/cable/add/<int:id>', methods=['GET', 'POST'])
+def cable_add(id):
+    form = CableForm()
+    box = Optobox.query.get_or_404(id)
+    
+    if form.validate_on_submit():
+        new_cable = OpticalCable(
+            from_box=form.from_box.data,
+            fiber_color=str(form.fiber_color.data),  
+            box_id=box.id 
             )
-        db.session.add(port)
+        db.session.add(new_cable)
         db.session.commit()
         
-        for vlan_id in selected_vlans:
-            vlan = Vlans.query.get(vlan_id)
-            if vlan:
-                port.vlans.append(vlan)
-                db.session.commit()
-        flash('Порт успешно добавлен', 'success')
-        return redirect(url_for('device_detail', id=device.id))
+        flash('Кабель успешно создан', 'success')
+        return redirect(url_for('box_detail', id=box.id))
     
-    return render_template('port-add.html', form=form)
+    return render_template('cable-add.html', form=form)
 
 
-
-@app.route('/vlans', methods=['GET'])
-def vlans():
-    vlan = Vlans.query.all()
-    return render_template('vlans.html', vlans_all=vlan)
-
-
-@app.route('/vlan/add', methods=['GET', 'POST'])
-def vlan_add():
-    form = VlanForm()    
-    if form.validate_on_submit():
-        vlan = Vlans(
-            vlan_id=form.vlan_id.data,
-            vlan_description=form.vlan_description.data,
-                 
-            )
-        db.session.add(vlan)
-        db.session.commit()
-        flash('Vlan успешно добавлен', 'success')
-        return redirect(url_for('vlans'))
-    
-    return render_template('vlan-add.html', form=form)
+@app.route('/boxes/cable/delete/<int:id>')
+def cable_delete(id):
+    cable = OpticalCable.query.get_or_404(id)
+    db.session.delete(cable)
+    db.session.commit()
+    flash('Кабель успешно удален', 'success')
+    return redirect(url_for('boxes'))

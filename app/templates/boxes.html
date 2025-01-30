@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список муфт</title>
+</head>
+<body>
+    <h1>Список муфт</h1>
+    {% if boxes %}
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Описание</th>
+                <th>Координаты</th>
+                <th>Штрихкод</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for box in boxes %}
+            <tr>
+                <td>{{ box.id }}</td>
+                <td><a href="{{ url_for('box_detail', id=box.id) }}" class="btn btn-sm btn-primary">{{ box.box_description }}</a></td>
+                <td>{{ box.box_coordinates }}</td>
+                <td><a href="{{ file_url }}" class="btn btn-sm btn-primary">{{ box.barcode.num }}</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Муфты не найдены.</p>
+    {% endif %}
+    <br>
+    <a href="{{ url_for('box_add') }}">Создать новую муфту</a>
+</body>
+</html>
